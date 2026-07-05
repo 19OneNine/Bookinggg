@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>19OneNine Booking System V6</title>
+<style>
+body{font-family:Arial;background:#f3f4f6;margin:0}
+header{background:#111827;color:#fff;padding:15px;text-align:center}
+.container{max-width:1400px;margin:auto;padding:15px}
+.card{background:#fff;padding:15px;border-radius:12px;margin-bottom:15px;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+input,select,button{padding:10px;width:100%;margin:4px 0}
+button{background:#111827;color:#fff;border:none;border-radius:8px}
+table{width:100%;border-collapse:collapse}
+th,td{border:1px solid #ddd;padding:8px;text-align:center}
+th{background:#1f2937;color:white}
+.booked{background:#fecaca}
+</style>
+</head>
+<body>
+<header>
+<h1>19OneNine Group Service</h1>
+<p>Booking System V6</p>
+</header>
+
+<div class="container">
+
+<div class="grid">
+<div class="card"><h2 id="tb">0</h2>Total Booking</div>
+<div class="card"><h2 id="tr">RM0</h2>Jumlah Jualan</div>
+<div class="card"><h2 id="td">RM0</h2>Deposit</div>
+<div class="card"><h2 id="av">6</h2>Jumlah Kereta</div>
+</div>
+
+<div class="card">
+<h3>Tambah Tempahan</h3>
+<input id="nama" placeholder="Nama Pelanggan">
+<input id="telefon" placeholder="No Telefon">
+<select id="kereta">
+<option>Axia Baru</option>
+<option>Axia Lama</option>
+<option>Bezza 1.3</option>
+<option>Bezza 1.0</option>
+<option>Alza</option>
+<option>Exora</option>
+</select>
+<input id="harga" type="number" placeholder="Harga Sehari">
+<input id="deposit" type="number" placeholder="Deposit">
+<input id="mula" type="date">
+<input id="tamat" type="date">
+<button onclick="addBooking()">Simpan Tempahan</button>
+</div>
+
+<div class="card">
+<h3>Semak Kereta Available</h3>
+<input id="checkDate" type="date">
+<button onclick="checkAvailable()">Semak</button>
+<div id="availableResult"></div>
+</div>
+
+<div class="card">
+<h3>Booking</h3>
+<table>
+<thead>
+<tr>
+<th>Nama</th><th>Telefon</th><th>Kereta</th><th>Tarikh</th><th>Jumlah</th><th>WA</th><th>Padam</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+
+</div>
+
+<script>
+const cars=["Axia Baru","Axia Lama","Bezza 1.3","Bezza 1.0","Alza","Exora"];
+
+function db(){return JSON.parse(localStorage.getItem("v6_booking")||"[]");}
+function save(d){localStorage.setItem("v6_booking",JSON.stringify(d));}
+
+function days(a,b){
+ return Math.max(1,Math.ceil((new Date(b)-new Date(a))/86400000)+1);
+}
+
+function addBooking(){
+ let d=db();
+
+ for(let x of d){
+   if(x.kereta===kereta.value &&
+      new Date(mula.value)<=new Date(x.tamat) &&
+      new Date(tamat.value)>=new Date(x.mula)){
+      alert("Kereta telah ditempah pada tarikh tersebut.");
+      return;
+   }
+ }
+
+ let total=days(mula.value,tamat.value)*(Number(harga.value)||0);
+
+ d.push({
+  nama:nama.value,
+  telefon:telefon.value,
+  kereta:kereta.value,
+  mula:mula.value,
+  tamat:tamat.value,
+  deposit:Number(deposit.value||0),
+  jumlah:total
+ });
+
+ save(d);
+ load();
+}
+
+function removeBooking(i){
+ let d=db();
+ d.splice(i,1);
+ save(d);
+ load();
+}
+
+function checkAvailable(){
+ let date=document.getElementById("checkDate").value;
+ let d=db();
+
+ let available=cars.filter(car=>{
+   return !d.some(b=>
+      b.kereta===car &&
+      new Date(date)>=new Date(b.mula) &&
+      new Date(date)<=new Date(b.tamat)
+   );
+ });
+
+ availableResult.innerHTML="<b>Available:</b><br>"+available.join("<br>");
+}
+
+function load(){
+ let d=db();
+ let html="";
+ let revenue=0;
+ let depositTotal=0;
+
+ d.forEach((b,i)=>{
+  revenue+=Number(b.jumlah);
+  depositTotal+=Number(b.deposit);
+
+  html+=`
+  <tr>
+   <td>${b.nama}</td>
+   <td>${b.telefon}</td>
+   <td>${b.kereta}</td>
+   <td>${b.mula} → ${b.tamat}</td>
+   <td>RM${b.jumlah}</td>
+   <td><a target="_blank" href="https://wa.me/6${b.telefon.replace(/\D/g,'')}">WhatsApp</a></td>
+   <td><button onclick="removeBooking(${i})">Padam</button></td>
+  </tr>`;
+ });
+
+ list.innerHTML=html;
+ tb.innerText=d.length;
+ tr.innerText="RM"+revenue;
+ td.innerText="RM"+depositTotal;
+}
+
+load();
+</script>
+</body>
+</html>
